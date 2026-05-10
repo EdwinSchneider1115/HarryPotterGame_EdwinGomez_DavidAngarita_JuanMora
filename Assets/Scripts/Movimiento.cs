@@ -1,4 +1,5 @@
-using UnityEngine;
+﻿using UnityEngine;
+using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 public class Movimiento : MonoBehaviour
 {
@@ -15,9 +16,16 @@ public class Movimiento : MonoBehaviour
 
     private Vector3 checkpointPosition;
 
+    // 🔥 Animator
+    private Animator animator;
+
+    // 🔥 Crouch
+    private bool isCrouching = false;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        animator = GetComponent<Animator>();
 
         checkpointPosition = transform.position;
     }
@@ -27,8 +35,8 @@ public class Movimiento : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * sensibilidadMouse * Time.deltaTime;
         transform.Rotate(0f, mouseX, 0f);
 
-        float x = Input.GetAxis("Vertical");
-        float z = -Input.GetAxis("Horizontal");
+        float x = Input.GetAxis("Horizontal");
+        float z = Input.GetAxis("Vertical");
 
         Vector3 direccion = transform.forward * z + transform.right * x;
         direccion.Normalize();
@@ -47,11 +55,41 @@ public class Movimiento : MonoBehaviour
 
         rb.linearVelocity = new Vector3(direccion.x * velocidadActual, rb.linearVelocity.y, direccion.z * velocidadActual);
 
+        // 🔥 WALK
+        if (direccion.magnitude > 0)
+        {
+            animator.SetBool("walk", true);
+        }
+        else
+        {
+            animator.SetBool("walk", false);
+        }
+
+        // 🔥 RUN
+        if (Input.GetKey(KeyCode.LeftShift) && direccion.magnitude > 0 && !isCrouching)
+        {
+            animator.SetBool("run", true);
+        }
+        else
+        {
+            animator.SetBool("run", false);
+        }
+
+        // 🔥 CROUCH (toggle con C)
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            isCrouching = !isCrouching;
+            animator.SetBool("crouch", isCrouching);
+        }
+
+        // 🔥 JUMP
         if (Input.GetKeyDown(KeyCode.Space) && saltosRestantes > 0)
         {
             rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
             saltosRestantes--;
+
+            animator.SetTrigger("jump");
         }
 
         if (Input.GetKeyDown(KeyCode.R))
@@ -98,6 +136,4 @@ public class Movimiento : MonoBehaviour
         rb.linearVelocity = Vector3.zero;
         transform.position = checkpointPosition;
     }
-
-    
 }
